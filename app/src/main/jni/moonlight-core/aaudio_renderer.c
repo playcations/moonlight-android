@@ -35,6 +35,7 @@ typedef void (*AAudioStreamBuilder_setSharingMode_fn)(AAudioStreamBuilder* build
 typedef void (*AAudioStreamBuilder_setDataCallback_fn)(AAudioStreamBuilder* builder, AAudioStream_dataCallback callback, void* userData);
 typedef void (*AAudioStreamBuilder_setUsage_fn)(AAudioStreamBuilder* builder, aaudio_usage_t usage);
 typedef void (*AAudioStreamBuilder_setContentType_fn)(AAudioStreamBuilder* builder, aaudio_content_type_t contentType);
+typedef aaudio_stream_state_t (*AAudioStream_getState_fn)(AAudioStream* stream);
 typedef aaudio_result_t (*AAudioStream_requestStart_fn)(AAudioStream* stream);
 typedef aaudio_result_t (*AAudioStream_requestStop_fn)(AAudioStream* stream);
 typedef aaudio_result_t (*AAudioStream_close_fn)(AAudioStream* stream);
@@ -60,6 +61,7 @@ static AAudioStreamBuilder_setSharingMode_fn p_AAudioStreamBuilder_setSharingMod
 static AAudioStreamBuilder_setDataCallback_fn p_AAudioStreamBuilder_setDataCallback;
 static AAudioStreamBuilder_setUsage_fn p_AAudioStreamBuilder_setUsage;
 static AAudioStreamBuilder_setContentType_fn p_AAudioStreamBuilder_setContentType;
+static AAudioStream_getState_fn p_AAudioStream_getState;
 static AAudioStream_requestStart_fn p_AAudioStream_requestStart;
 static AAudioStream_requestStop_fn p_AAudioStream_requestStop;
 static AAudioStream_close_fn p_AAudioStream_close;
@@ -126,6 +128,7 @@ static bool loadAaudioSymbols(void) {
     LOAD_REQUIRED(AAudioStreamBuilder_setPerformanceMode);
     LOAD_REQUIRED(AAudioStreamBuilder_setSharingMode);
     LOAD_REQUIRED(AAudioStreamBuilder_setDataCallback);
+    LOAD_REQUIRED(AAudioStream_getState);
     LOAD_REQUIRED(AAudioStream_requestStart);
     LOAD_REQUIRED(AAudioStream_requestStop);
     LOAD_REQUIRED(AAudioStream_close);
@@ -400,4 +403,11 @@ JNIEXPORT void JNICALL Java_com_limelight_binding_audio_NativeAAudioRenderer_nat
     pthread_mutex_lock(&streamMutex);
     freeRingLocked();
     pthread_mutex_unlock(&streamMutex);
+}
+
+JNIEXPORT jboolean JNICALL Java_com_limelight_binding_audio_NativeAAudioRenderer_nativeIsDisconnected(JNIEnv* env, jclass clazz) {
+    (void)env;
+    (void)clazz;
+    // Called on the serialized Java writer/lifecycle thread, never the callback.
+    return stream != NULL && p_AAudioStream_getState(stream) == AAUDIO_STREAM_STATE_DISCONNECTED;
 }

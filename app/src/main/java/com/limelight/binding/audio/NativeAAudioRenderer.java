@@ -12,6 +12,7 @@ final class NativeAAudioRenderer implements AAudioBackend {
         return nativeSetup(configuration.channelCount, rate, packetFrames);
     }
     @Override public boolean start() { return nativeStart(); }
+    @Override public boolean isDisconnected() { return nativeIsDisconnected(); }
     @Override public void stop() { nativeStop(); }
     @Override public void write(short[] samples) { nativeWrite(samples, samples.length); }
     @Override public void cleanup() { nativeCleanup(); }
@@ -19,6 +20,7 @@ final class NativeAAudioRenderer implements AAudioBackend {
     private static native boolean nativeIsSupported();
     private static native int nativeSetup(int channels, int rate, int packetFrames);
     private static native boolean nativeStart();
+    private static native boolean nativeIsDisconnected();
     private static native void nativeStop();
     private static native void nativeWrite(short[] samples, int sampleCount);
     private static native void nativeCleanup();
