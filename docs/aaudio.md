@@ -24,3 +24,16 @@ Unit tests cover backend selection and lifecycle/fallback behavior. Before
 upstream submission, hardware validation must include repeated sessions, output
 changes, Bluetooth/USB, effects and surround fallback. Disable the option to use
 stock audio behavior. No server changes are required.
+
+## Output disconnection recovery
+
+During active playback, a disconnected AAudio stream is closed and reopened once
+using the system default output, preserving rate and packet size. Reopening and
+cleanup run on the serialized writer/lifecycle thread, not the audio callback.
+If setup/start fails or a second disconnection occurs in the same session, the
+renderer switches to AudioTrack. Starting a new session resets the retry budget.
+No HDMI device is forced, so this also respects non-HDMI output choices.
+
+Recovery unit tests simulate disconnection, setup/start failure, repeat failures,
+fallback failure and cleanup. Real output changes still require device testing;
+this is not a claim that HDMI, Bluetooth or USB recovery is already verified.

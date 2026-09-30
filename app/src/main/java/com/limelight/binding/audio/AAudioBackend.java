@@ -7,6 +7,7 @@ interface AAudioBackend {
     boolean isSupported();
     int setup(MoonBridge.AudioConfiguration configuration, int rate, int packetFrames);
     boolean start();
+    boolean isDisconnected();
     void stop();
     void write(short[] samples);
     void cleanup();

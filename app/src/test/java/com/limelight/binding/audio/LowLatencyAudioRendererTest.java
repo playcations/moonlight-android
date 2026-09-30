@@ -73,12 +73,77 @@ public class LowLatencyAudioRendererTest {
         r.setup(config(2), 48000, 240); r.start(); r.playDecodedAudio(new short[480]);
         assertEquals(0, nativeOutput.writes);
     }
+    @Test public void disconnectedOutputReopensAndContinuesWriting() {
+        LowLatencyAudioRenderer r = renderer(true);
+        r.setup(config(2), 48000, 240); r.start();
+        nativeOutput.disconnected = true;
+        r.playDecodedAudio(new short[480]);
+        assertEquals(2, nativeOutput.setups);
+        assertEquals(2, nativeOutput.starts);
+        assertEquals(1, nativeOutput.cleanups);
+        assertEquals(1, nativeOutput.writes);
+        assertEquals(0, fallback.setups);
+        r.stop(); r.cleanup();
+        assertEquals(1, nativeOutput.stops);
+        assertEquals(2, nativeOutput.cleanups);
+    }
+    @Test public void failedReopenUsesFallback() {
+        LowLatencyAudioRenderer r = renderer(true);
+        r.setup(config(2), 48000, 240); r.start();
+        nativeOutput.disconnected = true;
+        nativeOutput.result = -1;
+        r.playDecodedAudio(new short[480]); r.playDecodedAudio(new short[480]);
+        assertEquals(2, nativeOutput.setups);
+        assertEquals(2, nativeOutput.cleanups);
+        assertEquals(1, fallback.starts);
+        assertEquals(2, fallback.writes);
+    }
+    @Test public void failedReopenStartUsesFallback() {
+        LowLatencyAudioRenderer r = renderer(true);
+        r.setup(config(2), 48000, 240); r.start();
+        nativeOutput.disconnected = true;
+        nativeOutput.startsSuccessfully = false;
+        r.playDecodedAudio(new short[480]);
+        assertEquals(2, nativeOutput.starts);
+        assertEquals(1, fallback.writes);
+    }
+    @Test public void repeatedDisconnectFallsBackWithoutReopenLoop() {
+        LowLatencyAudioRenderer r = renderer(true);
+        r.setup(config(2), 48000, 240); r.start();
+        nativeOutput.disconnected = true; r.playDecodedAudio(new short[480]);
+        nativeOutput.disconnected = true; r.playDecodedAudio(new short[480]);
+        r.playDecodedAudio(new short[480]);
+        assertEquals(2, nativeOutput.setups);
+        assertEquals(1, fallback.setups);
+        assertEquals(2, fallback.writes);
+        r.setup(config(2), 48000, 240); r.start();
+        nativeOutput.disconnected = true; r.playDecodedAudio(new short[480]);
+        assertEquals(4, nativeOutput.setups);
+    }
+    @Test public void failedRecoveryAndFallbackDoNotWriteOrRetry() {
+        LowLatencyAudioRenderer r = renderer(true);
+        r.setup(config(2), 48000, 240); r.start();
+        nativeOutput.disconnected = true; nativeOutput.result = -1; fallback.result = -1;
+        r.playDecodedAudio(new short[480]); r.playDecodedAudio(new short[480]);
+        r.stop(); r.cleanup();
+        assertEquals(2, nativeOutput.setups);
+        assertEquals(0, fallback.writes);
+        assertEquals(0, nativeOutput.writes);
+    }
+    @Test public void cleanedRendererDoesNotRecoverOrWrite() {
+        LowLatencyAudioRenderer r = renderer(true);
+        r.setup(config(2), 48000, 240); r.start(); r.cleanup();
+        nativeOutput.disconnected = true; r.playDecodedAudio(new short[480]);
+        assertEquals(1, nativeOutput.setups);
+        assertEquals(0, nativeOutput.writes);
+    }
     private static class FakeNative implements AAudioBackend {
-        boolean supported = true, startsSuccessfully = true;
+        boolean supported = true, startsSuccessfully = true, disconnected;
         int result, probes, setups, starts, stops, writes, cleanups;
         public boolean isSupported() { probes++; return supported; }
         public int setup(MoonBridge.AudioConfiguration c, int r, int p) { setups++; return result; }
-        public boolean start() { starts++; return startsSuccessfully; }
+        public boolean start() { starts++; disconnected = false; return startsSuccessfully; }
+        public boolean isDisconnected() { return disconnected; }
         public void stop() { stops++; }
         public void write(short[] samples) { writes++; }
         public void cleanup() { cleanups++; }
