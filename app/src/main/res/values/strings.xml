@@ -303,4 +303,6 @@
     <string name="analogscroll_none">None (both sticks move the mouse)</string>
     <string name="analogscroll_right">Right analog stick</string>
     <string name="analogscroll_left">Left analog stick</string>
+    <string name="title_checkbox_enable_aaudio">Use experimental low-latency audio</string>
+    <string name="summary_checkbox_enable_aaudio">Try AAudio for stereo playback on Android 8 or newer. Requires system equalizer support to be disabled. Turn off if audio is unstable.</string>
 </resources>
